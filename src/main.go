@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	go_util "tieba-sign/src/go-util"
+	go_util "tieba-sign/src/util"
 	"time"
 )
 
@@ -22,32 +22,37 @@ var followNum = 200
 
 func main() {
 	//bduss := os.Args[1]
-	cookie := Cookie{""}
-	wireTbs()
-	wireFollow()
-
+	err := wireTbs()
+	if err != nil {
+		return
+	}
+	err = wireFollow()
+	if err != nil {
+		return
+	}
+	doSign()
 }
 
 /**
 注入tbs
 */
 func wireTbs() error {
-	if content, err := doGet(tbs_url); err == nil {
-		if content["is_login"] == strconv.Itoa(1) {
-			info("获取tbs成功")
-			tbs = content["tbs"].(string)
-		}
-		return nil
-	} else {
+	content, err := DoGet(tbs_url)
+	if err != nil {
 		return err
 	}
+	if content["is_login"] == strconv.Itoa(1) {
+		info("获取tbs成功")
+		tbs = content["tbs"].(string)
+	}
+	return nil
 }
 
 /**
 注入关注的贴吧
 */
 func wireFollow() error {
-	if content, err := doGet(like_url); err == nil {
+	if content, err := DoGet(like_url); err == nil {
 		info("获取关注列表成功")
 		dataList := content["data"].(map[string]interface{})["like_forum"].([]map[string]interface{})
 		followNum = len(dataList)
@@ -77,7 +82,7 @@ func doSign() {
 			requestBody["kw"] = tieba
 			requestBody["tbs"] = tbs
 			requestBody["sign"] = go_util.MD5("kw=" + rotation + "tbs=" + tbs + "tiebaclient!!!")
-			if resp, _err := doPost(sign_url, requestBody); _err != nil {
+			if resp, _err := DoPost(sign_url, requestBody); _err != nil {
 				err(_err.Error())
 			} else {
 				if resp["error_code"] == "0" {
