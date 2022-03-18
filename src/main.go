@@ -1,14 +1,11 @@
 package main
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"net/http"
 	"strconv"
 	"strings"
+	go_util "tieba-sign/src/go-util"
+	"time"
 )
 
 const (
@@ -76,46 +73,28 @@ func doSign() {
 	for signIndex := 0; (signIndex < retryNum) && len(success) < followNum; signIndex++ {
 		for _, tieba := range follow {
 			rotation := strings.Replace(tieba, "%2B", "+", -1)
-
-		}
-	}
-
-}
-
-func doGet(url string) (map[string]interface{}, error) {
-	if resp, err := http.Get(url); err == nil {
-		defer func(Body io.ReadCloser) {
-			err := Body.Close()
-			if err != nil {
-				warn("http关闭失败")
-			}
-		}(resp.Body)
-		var content map[string]interface{}
-		if v, err := ioutil.ReadAll(resp.Body); err == nil {
-			if err = json.Unmarshal(v, &content); err == nil {
-				return content, nil
+			requestBody := make(map[string]interface{})
+			requestBody["kw"] = tieba
+			requestBody["tbs"] = tbs
+			requestBody["sign"] = go_util.MD5("kw=" + rotation + "tbs=" + tbs + "tiebaclient!!!")
+			if resp, _err := doPost(sign_url, requestBody); _err != nil {
+				err(_err.Error())
+			} else {
+				if resp["error_code"] == "0" {
+					success = append(success, rotation)
+				} else {
+					err("签到失败")
+				}
 			}
 		}
-	}
-	return nil, errors.New("http fail")
-}
-
-func doPost(url string, body map[string]interface{}) (map[string]interface{}, error) {
-	if resp, err := http.Post(url, "application/x-www-form-urlencoded"); err == nil {
-		defer func(Body io.ReadCloser) {
-			err := Body.Close()
-			if err != nil {
-				warn("http关闭失败")
-			}
-		}(resp.Body)
-		var content map[string]interface{}
-		if v, err := ioutil.ReadAll(resp.Body); err == nil {
-			if err = json.Unmarshal(v, &content); err == nil {
-				return content, nil
-			}
+		if len(success) < len(follow) {
+			time.Sleep(time.Minute * 5)
+			wireTbs()
 		}
+		retryNum--
+
 	}
-	return nil, errors.New("http fail")
+
 }
 
 func info(msg string) {
