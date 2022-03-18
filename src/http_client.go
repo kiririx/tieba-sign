@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 func doGet(url string) (map[string]interface{}, error) {
@@ -27,7 +28,16 @@ func doGet(url string) (map[string]interface{}, error) {
 }
 
 func doPost(url string, body map[string]interface{}) (map[string]interface{}, error) {
-	if resp, err := http.Post(url, "application/x-www-form-urlencoded"); err == nil {
+	var bodyString string
+	i := 0
+	for k, v := range body {
+		if i > 0 {
+			bodyString += "&"
+		}
+		bodyString += k + "=" + v.(string)
+		i++
+	}
+	if resp, err := http.Post(url, "application/x-www-form-urlencoded", strings.NewReader(bodyString)); err == nil {
 		defer func(Body io.ReadCloser) {
 			err := Body.Close()
 			if err != nil {
