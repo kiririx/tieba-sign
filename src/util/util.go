@@ -13,3 +13,12 @@ func MD5(source string) string {
 func Base64(source string) string {
 	return source
 }
+
+//func ConvInt(v interface{}) int{
+//	switch reflect.TypeOf(v).Kind() {
+//	case reflect.Int, reflect.Int32, reflect.Int64, reflect.Int16, reflect.Int8:
+//		return v.(int)
+//	case reflect.Float32, reflect.Float64:
+//
+//	}
+//}

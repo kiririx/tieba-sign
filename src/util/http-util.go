@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"encoding/json"
@@ -9,21 +9,21 @@ import (
 	"strings"
 )
 
-var BDUSS = "RJcUNCdVhqR1J6ZkhzY2tuYnZsN0JTUkJjQjFpeC1PdDJvYkF5LU1LNVp6UUJpRUFBQUFBJCQAAAAAAAAAAAEAAAAYm9-BsLK-smRl6dnX0wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFlA2WFZQNlhb1"
+type ReqParam struct {
+	Bduss  string
+	Params map[string]string
+}
 
-func DoGet(url string) (map[string]interface{}, error) {
+func DoGet(url string, param ReqParam) (map[string]interface{}, error) {
 	client := new(http.Client)
 	req, err := http.NewRequest("GET", url, strings.NewReader(""))
 	if err != nil {
 		return nil, err
 	}
-	initHeader(&req.Header)
+	initHeader(&req.Header, param.Bduss)
 	if resp, err := client.Do(req); err == nil {
 		defer func(Body io.ReadCloser) {
-			err := Body.Close()
-			if err != nil {
-				warn("http关闭失败")
-			}
+			Body.Close()
 		}(resp.Body)
 		var content map[string]interface{}
 		if v, err := ioutil.ReadAll(resp.Body); err == nil {
@@ -35,14 +35,14 @@ func DoGet(url string) (map[string]interface{}, error) {
 	return nil, errors.New("http fail")
 }
 
-func DoPost(url string, body map[string]interface{}) (map[string]interface{}, error) {
+func DoPost(url string, param ReqParam) (map[string]interface{}, error) {
 	var bodyString string
 	i := 0
-	for k, v := range body {
+	for k, v := range param.Params {
 		if i > 0 {
 			bodyString += "&"
 		}
-		bodyString += k + "=" + v.(string)
+		bodyString += k + "=" + v
 		i++
 	}
 	client := new(http.Client)
@@ -50,17 +50,14 @@ func DoPost(url string, body map[string]interface{}) (map[string]interface{}, er
 	if err != nil {
 		return nil, err
 	}
-	initHeader(&req.Header)
+	initHeader(&req.Header, param.Bduss)
 	{
 		resp, err := client.Do(req)
 		if err != nil {
 			return nil, err
 		}
 		defer func(Body io.ReadCloser) {
-			err := Body.Close()
-			if err != nil {
-				warn("http关闭失败")
-			}
+			Body.Close()
 		}(resp.Body)
 		var content map[string]interface{}
 		v, err := ioutil.ReadAll(resp.Body)
@@ -75,10 +72,10 @@ func DoPost(url string, body map[string]interface{}) (map[string]interface{}, er
 	}
 }
 
-func initHeader(header *http.Header) {
+func initHeader(header *http.Header, bduss string) {
 	header.Set("connection", "keep-alive")
 	header.Set("Content-Type", "application/x-www-form-urlencoded")
 	header.Set("charset", "UTF-8")
 	header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36")
-	header.Set("Cookie", "BDUSS="+BDUSS)
+	header.Set("Cookie", "BDUSS="+bduss)
 }
