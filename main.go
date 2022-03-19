@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
+	"tieba-sign/src/db"
 	util "tieba-sign/src/util"
 	"time"
 )
@@ -17,36 +17,43 @@ const (
 var follow []string
 var success []string
 var tbs string
-var BDUSS string
 
 var followNum = 200
 
-func initBDUSS() {
-	BDUSS = ""
+func getBDUSS() []string {
+	bdussArr, err := db.GetBDUSS()
+	if err != nil {
+		fmt.Println("bduss获取失败")
+		return nil
+	}
+	return bdussArr
 }
 
 func main() {
-	initBDUSS()
-	err := wireTbs()
-	if err != nil {
-		return
+	bdussArr := getBDUSS()
+	for _, bduss := range bdussArr {
+		err := wireTbs(bduss)
+		if err != nil {
+			return
+		}
+		err = wireFollow(bduss)
+		if err != nil {
+			return
+		}
+		doSign(bduss)
 	}
-	err = wireFollow()
-	if err != nil {
-		return
-	}
-	//doSign()
+
 }
 
 /**
 注入tbs
 */
-func wireTbs() error {
-	content, err := util.DoGet(tbs_url, util.ReqParam{Bduss: BDUSS})
+func wireTbs(bduss string) error {
+	content, err := util.DoGet(tbs_url, util.ReqParam{Bduss: bduss})
 	if err != nil {
 		return err
 	}
-	if content["is_login"] == strconv.Itoa(1) {
+	if int(content["is_login"].(float64)) == 1 {
 		info("获取tbs成功")
 		tbs = content["tbs"].(string)
 	}
@@ -56,8 +63,8 @@ func wireTbs() error {
 /**
 注入关注的贴吧
 */
-func wireFollow() error {
-	if content, err := util.DoGet(like_url, util.ReqParam{Bduss: BDUSS}); err == nil {
+func wireFollow(bduss string) error {
+	if content, err := util.DoGet(like_url, util.ReqParam{Bduss: bduss}); err == nil {
 		info("获取关注列表成功")
 		data := content["data"].(map[string]interface{})
 		dataList := data["like_forum"].([]interface{})
@@ -83,28 +90,31 @@ func wireFollow() error {
 /**
 开始签到
 */
-func doSign() {
+func doSign(bduss string) {
 	retryNum := 5
+	var signFunc = func(tieba string) {
+		rotation := strings.Replace(tieba, "%2B", "+", -1)
+		requestBody := make(map[string]string)
+		requestBody["kw"] = tieba
+		requestBody["tbs"] = tbs
+		requestBody["sign"] = util.MD5("kw=" + rotation + "tbs=" + tbs + "tiebaclient!!!")
+		if resp, _err := util.DoPost(sign_url, util.ReqParam{Bduss: bduss, Params: requestBody}); _err != nil {
+			err(_err.Error())
+		} else {
+			if resp["error_code"] == "0" {
+				success = append(success, rotation)
+			} else {
+				err("签到失败")
+			}
+		}
+	}
 	for signIndex := 0; (signIndex < retryNum) && len(success) < followNum; signIndex++ {
 		for _, tieba := range follow {
-			rotation := strings.Replace(tieba, "%2B", "+", -1)
-			requestBody := make(map[string]string)
-			requestBody["kw"] = tieba
-			requestBody["tbs"] = tbs
-			requestBody["sign"] = util.MD5("kw=" + rotation + "tbs=" + tbs + "tiebaclient!!!")
-			if resp, _err := util.DoPost(sign_url, util.ReqParam{Bduss: BDUSS, Params: requestBody}); _err != nil {
-				err(_err.Error())
-			} else {
-				if resp["error_code"] == "0" {
-					success = append(success, rotation)
-				} else {
-					err("签到失败")
-				}
-			}
+			signFunc(tieba)
 		}
 		if len(success) < len(follow) {
 			time.Sleep(time.Minute * 5)
-			wireTbs()
+			wireTbs(bduss)
 		}
 		retryNum--
 
