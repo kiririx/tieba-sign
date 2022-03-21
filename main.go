@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"tieba-sign/src/db"
 	util "tieba-sign/src/util"
@@ -30,19 +31,32 @@ func getBDUSS() []string {
 }
 
 func main() {
-	bdussArr := getBDUSS()
-	for _, bduss := range bdussArr {
-		err := wireTbs(bduss)
+	var taskFunc = func() {
+		env, err := util.GetConfig()
 		if err != nil {
+			errLog(err.Error())
 			return
 		}
-		err = wireFollow(bduss)
-		if err != nil {
-			return
+		t, _ := strconv.Atoi(env["task.start.hour"])
+		if t == time.Now().Hour() {
+			bdussArr := getBDUSS()
+			for _, bduss := range bdussArr {
+				err := wireTbs(bduss)
+				if err != nil {
+					return
+				}
+				err = wireFollow(bduss)
+				if err != nil {
+					return
+				}
+				doSign(bduss)
+			}
 		}
-		doSign(bduss)
 	}
-
+	ticker := time.NewTicker(time.Hour)
+	for _ = range ticker.C {
+		taskFunc()
+	}
 }
 
 /**
@@ -74,10 +88,9 @@ func wireFollow(bduss string) error {
 			forumName := v["forum_name"].(string)
 			isSign := v["is_sign"]
 			if int(isSign.(float64)) == 0 {
-				fmt.Println("未签到：" + forumName)
 				follow = append(follow, strings.Replace(forumName, "+", "%2B", -1))
 			} else {
-				fmt.Println("已签到：" + forumName)
+				fmt.Println("已过签到：" + forumName)
 				success = append(success, forumName)
 			}
 		}
@@ -99,12 +112,13 @@ func doSign(bduss string) {
 		requestBody["tbs"] = tbs
 		requestBody["sign"] = util.MD5("kw=" + rotation + "tbs=" + tbs + "tiebaclient!!!")
 		if resp, _err := util.DoPost(sign_url, util.ReqParam{Bduss: bduss, Params: requestBody}); _err != nil {
-			err(_err.Error())
+			errLog(_err.Error())
 		} else {
 			if resp["error_code"] == "0" {
 				success = append(success, rotation)
+				info("签到成功：" + rotation)
 			} else {
-				err("签到失败")
+				errLog("签到失败")
 			}
 		}
 	}
@@ -130,6 +144,6 @@ func warn(msg string) {
 	fmt.Println("WARN === " + msg)
 }
 
-func err(msg string) {
+func errLog(msg string) {
 	fmt.Println("ERROR === " + msg)
 }
