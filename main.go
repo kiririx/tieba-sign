@@ -31,6 +31,20 @@ func getBDUSS() []string {
 }
 
 func main() {
+	var signFunc = func() {
+		bdussArr := getBDUSS()
+		for _, bduss := range bdussArr {
+			err := wireTbs(bduss)
+			if err != nil {
+				return
+			}
+			err = wireFollow(bduss)
+			if err != nil {
+				return
+			}
+			doSign(bduss)
+		}
+	}
 	var taskFunc = func() {
 		env, err := util.GetConfig()
 		if err != nil {
@@ -39,21 +53,10 @@ func main() {
 		}
 		t, _ := strconv.Atoi(env["task.start.hour"])
 		if t == time.Now().Hour() {
-			bdussArr := getBDUSS()
-			for _, bduss := range bdussArr {
-				err := wireTbs(bduss)
-				if err != nil {
-					return
-				}
-				err = wireFollow(bduss)
-				if err != nil {
-					return
-				}
-				doSign(bduss)
-			}
+			signFunc()
 		}
 	}
-	taskFunc()
+	signFunc()
 	ticker := time.NewTicker(time.Hour)
 	for _ = range ticker.C {
 		taskFunc()
