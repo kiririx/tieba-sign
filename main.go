@@ -53,6 +53,7 @@ func main() {
 			}
 		}
 	}
+	taskFunc()
 	ticker := time.NewTicker(time.Hour)
 	for _ = range ticker.C {
 		taskFunc()
