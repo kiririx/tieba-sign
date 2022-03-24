@@ -30,7 +30,7 @@ func getBDUSS() []string {
 	return bdussArr
 }
 
-func main() {
+func _main() {
 	var signFunc = func() {
 		bdussArr := getBDUSS()
 		for _, bduss := range bdussArr {
