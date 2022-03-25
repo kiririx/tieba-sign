@@ -7,11 +7,6 @@ import (
 
 func main() {
 	r := gin.Default()
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
 	for _, rt := range route.Routes {
 		var callbackFunc = func(context *gin.Context) {
 			resp := rt.HandlerFunc(context)
