@@ -9,26 +9,35 @@ import (
 
 type Bduss struct {
 	gorm.Model
-	Id    string
-	Bduss string
+	Bduss      string
+	Name       string
+	SignCount  int
+	SignStatus bool
 }
 
 func (Bduss) TableName() string {
 	return "bduss"
 }
 
+func init() {
+	err := db.Db.AutoMigrate(&Bduss{})
+	if err != nil {
+		panic(err)
+	}
+}
+
 func HandleBduss(context *gin.Context) rule.Resp {
 	var bduss []Bduss
 	db.Db.Find(&bduss)
-	list := make([]map[string]string, 0)
+	list := make([]map[string]interface{}, 0)
 	for _, bduss := range bduss {
-		list = append(list, func() map[string]string {
-			return map[string]string{
-				"id":         bduss.Id,
-				"name":       "name",
+		list = append(list, func() map[string]interface{} {
+			return map[string]interface{}{
+				"id":         bduss.ID,
+				"name":       bduss.Name,
 				"bduss":      bduss.Bduss,
-				"signStatus": "0",
-				"signCount":  "02",
+				"signStatus": bduss.SignStatus,
+				"signCount":  bduss.SignCount,
 			}
 		}())
 	}

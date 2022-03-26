@@ -60,7 +60,12 @@ class BdussList extends React.Component<any, State> {
     componentDidMount() {
         HttpClient.get(HttpURL.BDUSS, resp => {
             this.setState({
-                dataSource: resp.data.list
+                dataSource: resp.data.list.map((v: any) => {
+                    if (v.bduss.length > 30) {
+                        v.bduss = v.bduss.substring(0, 30) + "......"
+                    }
+                    return v
+                })
             })
         })
     }
