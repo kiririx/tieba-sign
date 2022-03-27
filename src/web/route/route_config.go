@@ -29,4 +29,5 @@ var Routes = make([]RtConf, 0)
 
 func init() {
 	Routes = append(Routes, build(GET, "/api/bduss", ctrl.HandleBduss))
+	Routes = append(Routes, build(POST, "/api/sign", ctrl.DoSign))
 }
