@@ -2,32 +2,20 @@ package ctrl
 
 import (
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 	"tieba-sign/src/db"
+	"tieba-sign/src/model"
 	"tieba-sign/src/web/rule"
 )
 
-type Bduss struct {
-	gorm.Model
-	Bduss      string
-	Name       string
-	SignCount  int
-	SignStatus bool
-}
-
-func (Bduss) TableName() string {
-	return "bduss"
-}
-
 func init() {
-	err := db.Db.AutoMigrate(&Bduss{})
+	err := db.Db.AutoMigrate(&model.Bduss{})
 	if err != nil {
 		panic(err)
 	}
 }
 
 func HandleBduss(context *gin.Context) rule.Resp {
-	var bduss []Bduss
+	var bduss []model.Bduss
 	db.Db.Find(&bduss)
 	list := make([]map[string]interface{}, 0)
 	for _, bduss := range bduss {

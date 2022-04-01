@@ -1,22 +1,22 @@
 package util
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"strings"
+	"tieba-sign/src/log"
 )
 
 var envCache = make(map[string]string)
 
-func GetConfig() (map[string]string, error) {
+func GetConfig() map[string]string {
 	if len(envCache) > 0 {
-		return envCache, nil
+		return envCache
 	}
 	file, err := os.Open("./env.properties")
 	if err != nil {
-		fmt.Println("open file err :", err)
-		return nil, err
+		log.ERROR("open file err :", err)
+		return nil
 	}
 	defer file.Close()
 	var buf [128]byte
@@ -28,8 +28,8 @@ func GetConfig() (map[string]string, error) {
 			break
 		}
 		if err != nil {
-			fmt.Println("read file err ", err)
-			return nil, err
+			log.ERROR("read file err ", err)
+			return nil
 		}
 		content = append(content, buf[:n]...)
 	}
@@ -44,5 +44,5 @@ func GetConfig() (map[string]string, error) {
 			envCache[key] = val
 		}
 	}
-	return envCache, nil
+	return envCache
 }

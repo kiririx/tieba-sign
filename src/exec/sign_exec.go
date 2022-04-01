@@ -4,12 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"tieba-sign/src/log"
 	"tieba-sign/src/util"
 )
 
 var signFailErr = errors.New("签到失败")
 
-func Sign(ids []string) {
+func Sign(ids []uint) {
 	for _, id := range ids {
 		// 通过id查询bduss
 		bduss := GetBduss(id)
@@ -26,7 +27,7 @@ func Sign(ids []string) {
 			} else {
 				if resp["error_code"] == "0" {
 					success = append(success, rotation)
-					fmt.Println("签到成功：" + rotation)
+					log.INFO("签到成功：" + rotation)
 				} else {
 					return signFailErr
 				}
@@ -54,7 +55,7 @@ func getTbs(bduss string) string {
 		panic(err)
 	}
 	if int(content["is_login"].(float64)) == 1 {
-		info("获取tbs成功")
+		log.INFO("获取tbs成功")
 		tbs = content["tbs"].(string)
 	}
 	return tbs
@@ -65,7 +66,7 @@ func getTbs(bduss string) string {
 */
 func getFollowTieba(bduss string) (followNum int, follow []string, success []string) {
 	if content, err := util.DoGet(util.LikeUrl, util.ReqParam{Bduss: bduss}); err == nil {
-		info("获取关注列表成功")
+		log.INFO("获取关注列表成功")
 		data := content["data"].(map[string]interface{})
 		dataList := data["like_forum"].([]interface{})
 		followNum = len(dataList)
@@ -84,16 +85,4 @@ func getFollowTieba(bduss string) (followNum int, follow []string, success []str
 	} else {
 		panic(err)
 	}
-}
-
-func info(msg string) {
-	fmt.Println("INFO === " + msg)
-}
-
-func warn(msg string) {
-	fmt.Println("WARN === " + msg)
-}
-
-func errLog(msg string) {
-	fmt.Println("ERROR === " + msg)
 }

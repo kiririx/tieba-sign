@@ -2,10 +2,37 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"strconv"
+	"tieba-sign/src/exec"
+	"tieba-sign/src/model"
+	"tieba-sign/src/util"
 	"tieba-sign/src/web/route"
+	"time"
 )
 
+func task() {
+	ticker := time.NewTicker(time.Hour)
+	var taskFunc = func() {
+		env := util.GetConfig()
+		t, _ := strconv.Atoi(env["task.start.hour"])
+		if t == time.Now().Hour() {
+			bdussModels := exec.GetAllBduss()
+			for _, bdussModel := range bdussModels {
+				go func(bduss model.Bduss) {
+					exec.Sign([]uint{bduss.ID})
+				}(bdussModel)
+			}
+		}
+	}
+	taskFunc()
+	for _ = range ticker.C {
+		taskFunc()
+	}
+
+}
+
 func main() {
+	go task()
 	r := gin.Default()
 	for _, rt := range route.Routes {
 		var callbackFunc = func(context *gin.Context) {

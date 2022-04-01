@@ -2,11 +2,17 @@ package exec
 
 import (
 	"tieba-sign/src/db"
-	"tieba-sign/src/web/ctrl"
+	"tieba-sign/src/model"
 )
 
-func GetBduss(id string) ctrl.Bduss {
-	var bduss ctrl.Bduss
+func GetBduss(id uint) model.Bduss {
+	var bduss model.Bduss
 	db.Db.Find(&bduss, id)
 	return bduss
+}
+
+func GetAllBduss() []model.Bduss {
+	var bdusses []model.Bduss
+	db.Db.Find(&bdusses)
+	return bdusses
 }
