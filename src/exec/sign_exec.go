@@ -21,7 +21,7 @@ func Sign(ids []uint) {
 			requestBody := make(map[string]string)
 			requestBody["kw"] = tieba
 			requestBody["tbs"] = tbs
-			requestBody["sign"] = util.MD5("kw=" + rotation + "tbs=" + tbs + "tiebaclient!!!")
+			requestBody["sign"] = util.Algorithm.MD5("kw=" + rotation + "tbs=" + tbs + "tiebaclient!!!")
 			if resp, _err := util.DoPost(util.SignUrl, util.ReqParam{Bduss: bduss.Bduss, Params: requestBody}); _err != nil {
 				return _err
 			} else {

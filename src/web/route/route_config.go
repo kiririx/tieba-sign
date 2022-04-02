@@ -27,7 +27,15 @@ func build(method int, url string, handlerFunc RtHandlerFunc) RtConf {
 
 var Routes = make([]RtConf, 0)
 
+var RoutesCache = make(map[string]RtConf)
+
+func appendRoute(routes *[]RtConf, method int, url string, handler func(context *gin.Context) rule.Resp) {
+	rt := build(method, url, handler)
+	*routes = append(*routes, rt)
+	RoutesCache[url] = rt
+}
+
 func init() {
-	Routes = append(Routes, build(GET, "/api/bduss", ctrl.HandleBduss))
-	Routes = append(Routes, build(POST, "/api/sign", ctrl.DoSign))
+	appendRoute(&Routes, GET, "/api/bduss", ctrl.HandleBduss)
+	appendRoute(&Routes, POST, "/api/sign", ctrl.DoSign)
 }

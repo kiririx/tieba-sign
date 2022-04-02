@@ -5,11 +5,14 @@ import (
 	"tieba-sign/src/log"
 )
 
-func IntToStr(v int) string {
+type Convert struct {
+}
+
+func (*Convert) IntToStr(v int) string {
 	return ""
 }
 
-func StrToUint(v string) uint {
+func (*Convert) StrToUint(v string) uint {
 	iv, err := strconv.Atoi(v)
 	if err != nil {
 		log.ERROR("convert string to uint fail: ", err)

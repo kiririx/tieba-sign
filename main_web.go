@@ -36,6 +36,7 @@ func main() {
 	r := gin.Default()
 	for _, rt := range route.Routes {
 		var callbackFunc = func(context *gin.Context) {
+			rt := route.RoutesCache[context.FullPath()]
 			resp := rt.HandlerFunc(context)
 			context.JSON(200, gin.H{
 				"data": resp,
