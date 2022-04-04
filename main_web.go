@@ -7,6 +7,7 @@ import (
 	"tieba-sign/src/model"
 	"tieba-sign/src/util"
 	"tieba-sign/src/web/route"
+	"tieba-sign/src/web/rule"
 	"time"
 )
 
@@ -37,7 +38,8 @@ func main() {
 	for _, rt := range route.Routes {
 		var callbackFunc = func(context *gin.Context) {
 			rt := route.RoutesCache[context.FullPath()]
-			resp := rt.HandlerFunc(context)
+			req := rule.Req{Ctx: context}
+			resp := rt.HandlerFunc(&req)
 			context.JSON(200, gin.H{
 				"data": resp,
 			})

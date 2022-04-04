@@ -1,14 +1,13 @@
 package ctrl
 
 import (
-	"github.com/gin-gonic/gin"
 	"tieba-sign/src/exec"
 	"tieba-sign/src/util"
 	"tieba-sign/src/web/rule"
 )
 
-func DoSign(ctx *gin.Context) rule.Resp {
-	id := ctx.Query("id")
+func DoSign(req *rule.Req) rule.Resp {
+	id := req.GetQuery("id")
 	idArr := []uint{util.Cvt.StrToUint(id)}
 	exec.Sign(idArr)
 	return map[string]interface{}{}
