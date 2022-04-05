@@ -8,6 +8,7 @@ type Bduss struct {
 	Name       string
 	SignCount  int
 	SignStatus bool
+	Auto       bool
 }
 
 func (Bduss) TableName() string {

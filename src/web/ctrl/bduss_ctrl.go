@@ -20,6 +20,7 @@ func getBdussResp(bduss *model.Bduss) rule.Resp {
 		"bduss":      bduss.Bduss,
 		"signStatus": bduss.SignStatus,
 		"signCount":  bduss.SignCount,
+		"auto":       bduss.Auto,
 	}
 }
 
