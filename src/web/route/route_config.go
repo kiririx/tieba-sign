@@ -35,6 +35,7 @@ func appendRoute(routes *[]RtConf, method int, url string, handler func(context 
 }
 
 func init() {
-	appendRoute(&Routes, GET, "/api/bduss", ctrl.GetBdusses)
+	appendRoute(&Routes, GET, "/api/bdusses", ctrl.GetBdusses)
+	appendRoute(&Routes, GET, "/api/bduss/:id", ctrl.GetBduss)
 	appendRoute(&Routes, POST, "/api/sign", ctrl.DoSign)
 }
