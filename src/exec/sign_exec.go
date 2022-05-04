@@ -10,37 +10,34 @@ import (
 
 var signFailErr = errors.New("签到失败")
 
-func Sign(ids []uint) {
-	for _, id := range ids {
-		// 通过id查询bduss
-		bduss := GetBduss(id)
-		followNum, follow, success := getFollowTieba(bduss.Bduss)
-		tbs := getTbs(bduss.Bduss)
-		var signFunc = func(tieba string) error {
-			rotation := strings.Replace(tieba, "%2B", "+", -1)
-			requestBody := make(map[string]string)
-			requestBody["kw"] = tieba
-			requestBody["tbs"] = tbs
-			requestBody["sign"] = util.Algorithm.MD5("kw=" + rotation + "tbs=" + tbs + "tiebaclient!!!")
-			if resp, _err := util.DoPost(util.SignUrl, util.ReqParam{Bduss: bduss.Bduss, Params: requestBody}); _err != nil {
-				return _err
+func Sign(bduss string) {
+	// 通过id查询bduss
+	followNum, follow, success := getFollowTieba(bduss)
+	tbs := getTbs(bduss)
+	var signFunc = func(tieba string) error {
+		rotation := strings.Replace(tieba, "%2B", "+", -1)
+		requestBody := make(map[string]string)
+		requestBody["kw"] = tieba
+		requestBody["tbs"] = tbs
+		requestBody["sign"] = util.Algorithm.MD5("kw=" + rotation + "tbs=" + tbs + "tiebaclient!!!")
+		if resp, _err := util.DoPost(util.SignUrl, util.ReqParam{Bduss: bduss, Params: requestBody}); _err != nil {
+			return _err
+		} else {
+			if resp["error_code"] == "0" {
+				success = append(success, rotation)
+				log.INFO("签到成功：" + rotation)
 			} else {
-				if resp["error_code"] == "0" {
-					success = append(success, rotation)
-					log.INFO("签到成功：" + rotation)
-				} else {
-					return signFailErr
-				}
+				return signFailErr
 			}
-			return nil
 		}
-		for signIndex := 0; len(success) < followNum; signIndex++ {
-			for _, tieba := range follow {
-				signFunc(tieba)
-			}
-			if len(success) < len(follow) {
-				// 没签完
-			}
+		return nil
+	}
+	for signIndex := 0; len(success) < followNum; signIndex++ {
+		for _, tieba := range follow {
+			signFunc(tieba)
+		}
+		if len(success) < len(follow) {
+			// 没签完
 		}
 	}
 }
