@@ -3,8 +3,8 @@ name: Go
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
+  schedule:
+    - cron: '0 6 * * *'
 
 jobs:
 
@@ -22,4 +22,4 @@ jobs:
       run: go build 
 
     - name: Run
-      run: ./tieba-sign -h 6 -b 2t4a0dTTEdpaURzalFQek1WY1p5Y1Bta2lHVFBObEp1d2prdmVFc2xRdkFidGxoRVFBQUFBJCQAAAAAAAAAAAEAAACgWubLTWl0c3VraW0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDhsWHA4bFhS
+      run: ./tieba-sign -b ${{secret.bduss}}
