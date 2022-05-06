@@ -32,7 +32,9 @@ func Sign(bduss string) {
 		}
 		return nil
 	}
-	for signIndex := 0; len(success) < followNum; signIndex++ {
+	retry := 0
+	for signIndex := 0; len(success) < followNum && retry < 5; signIndex++ {
+		retry++
 		for _, tieba := range follow {
 			signFunc(tieba)
 		}
