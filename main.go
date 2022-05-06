@@ -13,19 +13,18 @@ func main() {
 	if *bduss == "" {
 		panic("请设置bduss参数 -b")
 	}
-	if *startHour == -1 {
-		exec.Sign(*bduss)
-		return
-	}
 	exec.Sign(*bduss)
-	ticker := time.NewTicker(time.Hour)
-	var taskFunc = func() {
-		if *startHour == time.Now().Hour() {
-			exec.Sign(*bduss)
+	if *startHour > 0 {
+		ticker := time.NewTicker(time.Hour)
+		var taskFunc = func() {
+			if *startHour == time.Now().Hour() {
+				exec.Sign(*bduss)
+			}
+		}
+		taskFunc()
+		for _ = range ticker.C {
+			taskFunc()
 		}
 	}
-	taskFunc()
-	for _ = range ticker.C {
-		taskFunc()
-	}
+
 }
