@@ -57,7 +57,9 @@ func Sign(bduss string) {
 				success = append(success, rotation)
 				logx.INFO("签到成功：" + rotation)
 			} else {
-				return errors.New("签到失败")
+				err := errors.New("签到失败: " + rotation)
+				logx.ERR(err)
+				return err
 			}
 		}
 		return nil
