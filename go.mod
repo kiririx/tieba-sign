@@ -2,7 +2,7 @@ module tieba-sign
 
 go 1.19
 
-require github.com/kiririx/krutils v0.0.7
+require github.com/kiririx/krutils v0.0.8
 
 require (
 	github.com/fatih/color v1.13.0 // indirect

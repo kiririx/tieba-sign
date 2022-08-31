@@ -46,11 +46,8 @@ func Sign(bduss string) {
 	tbs := getTbs(bduss)
 	var signFunc = func(tieba string) error {
 		rotation := strings.Replace(tieba, "%2B", "+", -1)
-		if resp, _err := httpx.Client().Headers(getHttpHeader(bduss)).PostJSON(SignUrl, map[string]any{
-			"kw":   tieba,
-			"tbs":  tbs,
-			"sign": algox.MD5("kw=" + rotation + "tbs=" + tbs + "tiebaclient!!!"),
-		}); _err != nil {
+		params := fmt.Sprintf("kw=%s&tbs=%s&sign=%s", tieba, tbs, algox.MD5("kw="+rotation+"tbs="+tbs+"tiebaclient!!!"))
+		if resp, _err := httpx.Client().Headers(getHttpHeader(bduss)).PostStringGetJSON(SignUrl, params); _err != nil {
 			return _err
 		} else {
 			if resp["error_code"] == "0" {
