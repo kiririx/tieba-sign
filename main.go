@@ -42,9 +42,12 @@ func main() {
 
 func Sign(bduss string) {
 	// 通过id查询bduss
-	followNum, follow, success := getFollowTieba(bduss)
+	followNum, follow, success, signed := getFollowTieba(bduss)
 	tbs := getTbs(bduss)
 	var signFunc = func(tieba string) error {
+		if _, ok := signed[tieba]; ok {
+			return nil
+		}
 		rotation := strings.Replace(tieba, "%2B", "+", -1)
 		params := fmt.Sprintf("kw=%s&tbs=%s&sign=%s", tieba, tbs, algox.MD5("kw="+rotation+"tbs="+tbs+"tiebaclient!!!"))
 		if resp, _err := httpx.Client().Headers(getHttpHeader(bduss)).PostStringGetJSON(SignUrl, params); _err != nil {
@@ -98,7 +101,8 @@ func getTbs(bduss string) string {
 }
 
 // getFollowTieba 注入关注的贴吧
-func getFollowTieba(bduss string) (followNum int, follow []string, success []string) {
+func getFollowTieba(bduss string) (followNum int, follow []string, success []string, signed map[string]int) {
+	signed = map[string]int{}
 	if content, err := httpx.Client().Headers(getHttpHeader(bduss)).GetJSON(LikeUrl, nil); err == nil {
 		logx.INFO("获取关注列表成功")
 		data := content["data"].(map[string]interface{})
@@ -111,11 +115,12 @@ func getFollowTieba(bduss string) (followNum int, follow []string, success []str
 			if int(isSign.(float64)) == 0 {
 				follow = append(follow, strings.Replace(forumName, "+", "%2B", -1))
 			} else {
+				signed[forumName] = 1
 				fmt.Println("已过签到：" + forumName)
 				success = append(success, forumName)
 			}
 		}
-		return followNum, follow, success
+		return followNum, follow, success, signed
 	} else {
 		panic(err)
 	}
