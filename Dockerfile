@@ -9,4 +9,4 @@ ENV budss=""
 USER 1000
 
 
-CMD [ "./tieba-sign -h=$hour -b=$budss" ]
+CMD [ "./tieba-sign -h $hour -b $budss" ]
