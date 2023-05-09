@@ -33,7 +33,7 @@ func main() {
 			}
 		}
 		taskFunc()
-		for _ = range ticker.C {
+		for range ticker.C {
 			taskFunc()
 		}
 	}
