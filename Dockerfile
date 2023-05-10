@@ -8,5 +8,5 @@ ENV budss=""
 
 USER 1000
 
-
+WORKDIR /
 CMD [ "./tieba-sign -h $hour -b $budss" ]
