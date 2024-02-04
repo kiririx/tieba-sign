@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"github.com/kiririx/krutils/algox"
 	"github.com/kiririx/krutils/httpx"
-	"github.com/kiririx/krutils/logx"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
+	"io"
+	"os"
 	"strings"
 	"time"
 )
@@ -16,6 +19,24 @@ const (
 	TbsUrl  = "http://tieba.baidu.com/dc/common/tbs"
 	SignUrl = "http://c.tieba.baidu.com/c/c/forum/sign"
 )
+
+var Logrus *logrus.Logger
+
+func init() {
+	Logrus = logrus.New()
+
+	// 使用MultiWriter同时输出到文件和控制台
+	Logrus.SetOutput(io.MultiWriter(&lumberjack.Logger{
+		Filename:   "./logs/logfile.log", // 日志文件路径，lumberjack会自动根据配置轮转文件
+		MaxSize:    10,                   // 文件最大大小（MB）
+		MaxBackups: 3,                    // 保留旧文件的最大个数
+		MaxAge:     28,                   // 保留旧文件的最大天数
+		Compress:   false,                // 是否压缩/归档旧文件
+	}, os.Stdout))
+
+	// 设置日志格式为JSON，也可以使用logrus的TextFormatter
+	Logrus.SetFormatter(&logrus.JSONFormatter{})
+}
 
 func main() {
 	startHour := flag.Int("h", -1, "输入小时，0-23，默认6")
@@ -41,6 +62,14 @@ func main() {
 }
 
 func Sign(bduss string) {
+	defer func() {
+		err := recover()
+		if err != nil {
+			Logrus.Log(logrus.ErrorLevel, err)
+			// recover start
+			Sign(bduss)
+		}
+	}()
 	// 通过id查询bduss
 	followNum, follow, success, signed := getFollowTieba(bduss)
 	tbs := getTbs(bduss)
@@ -55,10 +84,10 @@ func Sign(bduss string) {
 		} else {
 			if resp["error_code"] == "0" {
 				success = append(success, rotation)
-				logx.INFO("签到成功：" + rotation)
+				Logrus.Info("签到成功：" + rotation)
 			} else {
 				err := errors.New("签到失败: " + rotation)
-				logx.ERR(err)
+				Logrus.Error(err)
 				return err
 			}
 		}
@@ -94,7 +123,7 @@ func getTbs(bduss string) string {
 		panic(err)
 	}
 	if int(content["is_login"].(float64)) == 1 {
-		logx.INFO("获取tbs成功")
+		Logrus.Info("获取tbs成功")
 		tbs = content["tbs"].(string)
 	}
 	return tbs
@@ -104,7 +133,7 @@ func getTbs(bduss string) string {
 func getFollowTieba(bduss string) (followNum int, follow []string, success []string, signed map[string]int) {
 	signed = map[string]int{}
 	if content, err := httpx.Client().Headers(getHttpHeader(bduss)).GetJSON(LikeUrl, nil); err == nil {
-		logx.INFO("获取关注列表成功")
+		Logrus.Info("获取关注列表成功")
 		data := content["data"].(map[string]interface{})
 		dataList := data["like_forum"].([]interface{})
 		followNum = len(dataList)
@@ -116,7 +145,6 @@ func getFollowTieba(bduss string) (followNum int, follow []string, success []str
 				follow = append(follow, strings.Replace(forumName, "+", "%2B", -1))
 			} else {
 				signed[forumName] = 1
-				fmt.Println("已过签到：" + forumName)
 				success = append(success, forumName)
 			}
 		}
