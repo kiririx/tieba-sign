@@ -1,14 +1,19 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
 	"github.com/kiririx/krutils/algox"
 	"github.com/kiririx/krutils/httpx"
+	"github.com/kiririx/krutils/jsonx"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
+	"io/ioutil"
+	"mime/multipart"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -73,6 +78,9 @@ func Sign(bduss string) {
 	// 通过id查询bduss
 	followNum, follow, success, signed := getFollowTieba(bduss)
 	tbs := getTbs(bduss)
+
+	failTb := make([]string, 0)
+
 	var signFunc = func(tieba string) error {
 		if _, ok := signed[tieba]; ok {
 			return nil
@@ -87,6 +95,7 @@ func Sign(bduss string) {
 				Logrus.Info("签到成功：" + rotation)
 			} else {
 				err := errors.New("签到失败: " + rotation)
+				failTb = append(failTb, rotation)
 				Logrus.Error(err)
 				return err
 			}
@@ -103,6 +112,16 @@ func Sign(bduss string) {
 			break
 		}
 	}
+	sendNotice(func() string {
+		failTbStr := ""
+		for _, ft := range failTb {
+			failTbStr += "- " + ft + "\n"
+		}
+		return fmt.Sprintf(`
+#### 签到成功%v个吧，失败%v个吧
+
+%s`, len(success), len(failTb), failTbStr)
+	}())
 }
 
 func getHttpHeader(bduss string) map[string]string {
@@ -152,4 +171,61 @@ func getFollowTieba(bduss string) (followNum int, follow []string, success []str
 	} else {
 		panic(err)
 	}
+}
+
+// send notice to the mobile by pushdeer
+func sendNotice(desc string) {
+	protocol := os.Getenv("push_protocol")
+	if protocol == "" {
+		protocol = "http"
+	}
+	host := os.Getenv("push_host")
+	port := os.Getenv("push_port")
+	key := os.Getenv("push_key")
+	url := fmt.Sprintf("%s://%s:%s/message/push", protocol, host, port)
+	method := "POST"
+
+	payload := &bytes.Buffer{}
+	writer := multipart.NewWriter(payload)
+	_ = writer.WriteField("pushkey", key)
+	_ = writer.WriteField("text", "百度贴吧:签到成功")
+	_ = writer.WriteField("desp", desc)
+	err := writer.Close()
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	client := &http.Client{}
+	req, err := http.NewRequest(method, url, payload)
+
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+	req.Header.Add("Connection", "keep-alive")
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	res, err := client.Do(req)
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+	result, err := jsonx.JSON2Map(string(body))
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+	code := result["code"]
+	if code != float64(0) {
+		errMsg := result["error"]
+		logrus.Error(errMsg)
+	}
+
 }
