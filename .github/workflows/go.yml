@@ -21,7 +21,7 @@ jobs:
       - name: Mod
         run: go mod tidy
       - name: Build
-        run: GOOS=linux GOARCH=amd64 go build
+        run: GOOS=linux GOARCH=amd64 go build -o tieba-sign
       - name: View
         run: pwd
 
