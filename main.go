@@ -2,13 +2,11 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
-	"github.com/kiririx/krutils/algox"
-	"github.com/kiririx/krutils/httpx"
-	"github.com/kiririx/krutils/logx"
+	"github.com/kiririx/krutils/ut"
+	"log"
+	"os"
 	"strings"
-	"time"
 )
 
 const (
@@ -18,29 +16,14 @@ const (
 )
 
 func main() {
-	startHour := flag.Int("h", -1, "输入小时，0-23，默认6")
-	bduss := flag.String("b", "", "输入bduss，可以去cookie中查看")
-	flag.Parse()
-	if *bduss == "" {
-		panic("请设置bduss参数 -b")
-	}
-	Sign(*bduss)
-	if *startHour > 0 {
-		ticker := time.NewTicker(time.Hour)
-		var taskFunc = func() {
-			if *startHour == time.Now().Hour() {
-				Sign(*bduss)
-			}
-		}
-		taskFunc()
-		for range ticker.C {
-			taskFunc()
-		}
-	}
-
+	Sign()
 }
 
-func Sign(bduss string) {
+func Sign() {
+	bduss := os.Getenv("bduss")
+	if bduss == "" {
+		panic("请设置bduss环境变量")
+	}
 	// 通过id查询bduss
 	followNum, follow, success, signed := getFollowTieba(bduss)
 	tbs := getTbs(bduss)
@@ -49,16 +32,16 @@ func Sign(bduss string) {
 			return nil
 		}
 		rotation := strings.Replace(tieba, "%2B", "+", -1)
-		params := fmt.Sprintf("kw=%s&tbs=%s&sign=%s", tieba, tbs, algox.MD5("kw="+rotation+"tbs="+tbs+"tiebaclient!!!"))
-		if resp, _err := httpx.Client().Headers(getHttpHeader(bduss)).PostStringGetJSON(SignUrl, params); _err != nil {
+		params := fmt.Sprintf("kw=%s&tbs=%s&sign=%s", tieba, tbs, ut.Algorithm().MD5("kw="+rotation+"tbs="+tbs+"tiebaclient!!!"))
+		if resp, _err := ut.HttpClient().Headers(getHttpHeader(bduss)).PostStringGetJSON(SignUrl, params); _err != nil {
 			return _err
 		} else {
 			if resp["error_code"] == "0" {
 				success = append(success, rotation)
-				logx.INFO("签到成功：" + rotation)
+				log.Println("签到成功：" + rotation)
 			} else {
 				err := errors.New("签到失败: " + rotation)
-				logx.ERR(err)
+				log.Println(err)
 				return err
 			}
 		}
@@ -74,6 +57,43 @@ func Sign(bduss string) {
 			break
 		}
 	}
+	pushMsg(success, follow)
+}
+
+func removeElements(a, b []string) []string {
+	result := []string{}
+	for _, v := range a {
+		if !contains(b, v) {
+			result = append(result, v)
+		}
+	}
+	return result
+}
+func contains(arr []string, val string) bool {
+	for _, v := range arr {
+		if v == val {
+			return true
+		}
+	}
+	return false
+}
+
+func pushMsg(success []string, follow []string) {
+	addr := os.Getenv("pushdeer.addr")
+	if addr == "" {
+		return
+	}
+	title := "百度贴吧签到完成"
+	subtitle := fmt.Sprintf("成功: %v 失败: %v", len(success), len(follow)-len(success))
+	// 得到签到失败的贴吧, 拼接字符串
+	desc := fmt.Sprintf("失败: %s", strings.Join(removeElements(follow, success), ","))
+	result, _ := ut.HttpClient().PostFormGetJSON(addr, map[string]string{
+		"pushkey":  os.Getenv("pushdeer.pushkey"),
+		"subtitle": subtitle,
+		"text":     title,
+		"desp":     desc,
+	})
+	log.Println(result)
 }
 
 func getHttpHeader(bduss string) map[string]string {
@@ -89,12 +109,12 @@ func getHttpHeader(bduss string) map[string]string {
 // getTbs 注入tbs
 func getTbs(bduss string) string {
 	var tbs string
-	content, err := httpx.Client().Headers(getHttpHeader(bduss)).GetJSON(TbsUrl, nil)
+	content, err := ut.HttpClient().Headers(getHttpHeader(bduss)).GetJSON(TbsUrl, nil)
 	if err != nil {
 		panic(err)
 	}
 	if int(content["is_login"].(float64)) == 1 {
-		logx.INFO("获取tbs成功")
+		log.Println("获取tbs成功")
 		tbs = content["tbs"].(string)
 	}
 	return tbs
@@ -103,8 +123,8 @@ func getTbs(bduss string) string {
 // getFollowTieba 注入关注的贴吧
 func getFollowTieba(bduss string) (followNum int, follow []string, success []string, signed map[string]int) {
 	signed = map[string]int{}
-	if content, err := httpx.Client().Headers(getHttpHeader(bduss)).GetJSON(LikeUrl, nil); err == nil {
-		logx.INFO("获取关注列表成功")
+	if content, err := ut.HttpClient().Headers(getHttpHeader(bduss)).GetJSON(LikeUrl, nil); err == nil {
+		log.Println("获取关注列表成功")
 		data := content["data"].(map[string]interface{})
 		dataList := data["like_forum"].([]interface{})
 		followNum = len(dataList)
@@ -116,7 +136,7 @@ func getFollowTieba(bduss string) (followNum int, follow []string, success []str
 				follow = append(follow, strings.Replace(forumName, "+", "%2B", -1))
 			} else {
 				signed[forumName] = 1
-				fmt.Println("已过签到：" + forumName)
+				log.Println("已过签到：" + forumName)
 				success = append(success, forumName)
 			}
 		}
