@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kiririx/krutils/ut"
+	"github.com/tidwall/gjson"
 	"log"
 	"os"
 	"strings"
@@ -20,12 +21,20 @@ func main() {
 }
 
 func Sign() {
+	defer func() {
+		err := recover()
+		if err != nil {
+			Sign()
+		}
+	}()
 	bduss := os.Getenv("bduss")
 	if bduss == "" {
-		panic("请设置bduss环境变量")
+		log.Println("请设置bduss环境变量")
+		return
 	}
 	// 通过id查询bduss
-	followNum, follow, success, signed := getFollowTieba(bduss)
+	success := make([]string, 0)
+	followNum, follow, signed := getFollowTieba(bduss)
 	tbs := getTbs(bduss)
 	var signFunc = func(tieba string) error {
 		if _, ok := signed[tieba]; ok {
@@ -121,26 +130,25 @@ func getTbs(bduss string) string {
 }
 
 // getFollowTieba 注入关注的贴吧
-func getFollowTieba(bduss string) (followNum int, follow []string, success []string, signed map[string]int) {
+func getFollowTieba(bduss string) (followNum int, follow []string, signed map[string]int) {
 	signed = map[string]int{}
-	if content, err := ut.HttpClient().Headers(getHttpHeader(bduss)).GetJSON(LikeUrl, nil); err == nil {
+	if content, err := ut.HttpClient().Headers(getHttpHeader(bduss)).GetString(LikeUrl, nil); err == nil {
 		log.Println("获取关注列表成功")
-		data := content["data"].(map[string]interface{})
-		dataList := data["like_forum"].([]interface{})
+		data := gjson.Get(content, "data").Map()
+		dataList := data["like_forum"].Array()
 		followNum = len(dataList)
 		for _, _data := range dataList {
-			v := _data.(map[string]interface{})
-			forumName := v["forum_name"].(string)
-			isSign := v["is_sign"]
-			if int(isSign.(float64)) == 0 {
+			v := _data.Map()
+			forumName := v["forum_name"].String()
+			isSign := v["is_sign"].Float()
+			if isSign == 0 {
 				follow = append(follow, strings.Replace(forumName, "+", "%2B", -1))
 			} else {
 				signed[forumName] = 1
 				log.Println("已过签到：" + forumName)
-				success = append(success, forumName)
 			}
 		}
-		return followNum, follow, success, signed
+		return followNum, follow, signed
 	} else {
 		panic(err)
 	}
