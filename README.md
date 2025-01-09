@@ -22,3 +22,10 @@ run 表示你的二进制程序文件
 
 ## 获取BDUSS
 通过在电脑端浏览器登入贴吧，打开开发者工具，查看Cookie中的BDUSS。
+
+## 推送到pushdeer
+在运行环境中设置环境变量
+- push_protocol:协议
+- push_host:域名或ip
+- push_port:端口
+- push_key:推送key
