@@ -25,11 +25,10 @@ export pushdeer.addr=https://abc.com/message/push
 export pushdeer.pushkey=你的pushkey
 go run main.go
 ```
-go run main.go 
 
 ### docker
 ```
-docker run --rm -e bduss=你的bduss -e pushkey=你的pushkey -e pushaddr=你的pushdeer地址 kiririx/tieba_sign:latest
+docker run --rm -e bduss=你的bduss -e pushdeer.pushkey=你的pushkey -e pushdeer.addr=你的pushdeer地址 kiririx/tieba_sign:latest
 ```
 
 ## 获取BDUSS
