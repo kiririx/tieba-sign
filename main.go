@@ -25,6 +25,7 @@ func Sign() {
 	defer func() {
 		err := recover()
 		if err != nil {
+			log.Println(err)
 			Sign()
 		}
 	}()
