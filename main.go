@@ -98,13 +98,17 @@ func pushMsg(success []string, follow []string) {
 	subtitle := fmt.Sprintf("成功: %v 失败: %v", len(success), len(follow)-len(success))
 	// 得到签到失败的贴吧, 拼接字符串
 	desc := fmt.Sprintf("失败: %s", strings.Join(removeElements(follow, success), ","))
-	result, _ := ut.HttpClient().PostFormGetJSON(addr, map[string]string{
+	result, err := ut.HttpClient().PostFormGetJSON(addr, map[string]string{
 		"pushkey":  os.Getenv("pushdeer.pushkey"),
 		"subtitle": subtitle,
 		"text":     title,
 		"desp":     desc,
 	})
-	log.Println(result)
+	if err != nil {
+		log.Println(err)
+	} else {
+		log.Println(result)
+	}
 }
 
 func getHttpHeader(bduss string) map[string]string {
