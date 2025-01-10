@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 const (
@@ -44,7 +45,10 @@ func Sign() {
 		}
 		rotation := strings.Replace(tieba, "%2B", "+", -1)
 		params := fmt.Sprintf("kw=%s&tbs=%s&sign=%s", tieba, tbs, ut.Algorithm().MD5("kw="+rotation+"tbs="+tbs+"tiebaclient!!!"))
-		if resp, _err := ut.HttpClient().Headers(getHttpHeader(bduss)).PostStringGetJSON(SignUrl, params); _err != nil {
+		if resp, _err := ut.HttpClient().
+			Timeout(time.Second*20).
+			Headers(getHttpHeader(bduss)).
+			PostStringGetJSON(SignUrl, params); _err != nil {
 			return _err
 		} else {
 			if resp["error_code"] == "0" {
@@ -98,12 +102,14 @@ func pushMsg(success []string, follow []string) {
 	subtitle := fmt.Sprintf("成功: %v 失败: %v", len(success), len(follow)-len(success))
 	// 得到签到失败的贴吧, 拼接字符串
 	desc := fmt.Sprintf("失败: %s", strings.Join(removeElements(follow, success), ","))
-	result, err := ut.HttpClient().PostFormGetJSON(addr, map[string]string{
-		"pushkey":  os.Getenv("pushdeer.pushkey"),
-		"subtitle": subtitle,
-		"text":     title,
-		"desp":     desc,
-	})
+	result, err := ut.HttpClient().
+		Timeout(time.Second*20).
+		PostFormGetJSON(addr, map[string]string{
+			"pushkey":  os.Getenv("pushdeer.pushkey"),
+			"subtitle": subtitle,
+			"text":     title,
+			"desp":     desc,
+		})
 	if err != nil {
 		log.Println(err)
 	} else {
@@ -124,7 +130,10 @@ func getHttpHeader(bduss string) map[string]string {
 // getTbs 注入tbs
 func getTbs(bduss string) string {
 	var tbs string
-	content, err := ut.HttpClient().Headers(getHttpHeader(bduss)).GetJSON(TbsUrl, nil)
+	content, err := ut.HttpClient().
+		Timeout(time.Second*20).
+		Headers(getHttpHeader(bduss)).
+		GetJSON(TbsUrl, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -138,7 +147,10 @@ func getTbs(bduss string) string {
 // getFollowTieba 注入关注的贴吧
 func getFollowTieba(bduss string) (followNum int, follow []string, signed map[string]int) {
 	signed = map[string]int{}
-	if content, err := ut.HttpClient().Headers(getHttpHeader(bduss)).GetString(LikeUrl, nil); err == nil {
+	if content, err := ut.HttpClient().
+		Timeout(time.Second*20).
+		Headers(getHttpHeader(bduss)).
+		GetString(LikeUrl, nil); err == nil {
 		log.Println("获取关注列表成功")
 		data := gjson.Get(content, "data").Map()
 		dataList := data["like_forum"].Array()
