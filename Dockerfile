@@ -4,7 +4,7 @@ COPY ./tieba-sign /tieba-sign
 
 ENV bduss ""
 
-USER root
+USER 1000
 
 WORKDIR /
 

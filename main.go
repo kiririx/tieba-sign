@@ -21,6 +21,7 @@ func main() {
 }
 
 func Sign() {
+	log.Println("开始签到")
 	defer func() {
 		err := recover()
 		if err != nil {
