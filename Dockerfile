@@ -1,4 +1,4 @@
-FROM alpine:3
+FROM ubuntu:22.04
 
 COPY ./tieba-sign /tieba-sign
 
