@@ -8,4 +8,6 @@ USER 1000
 
 WORKDIR /
 
-CMD ["./tieba-sign"]
+RUN chmod +x /tieba-sign
+
+ENTRYPOINT ["./tieba-sign"]
